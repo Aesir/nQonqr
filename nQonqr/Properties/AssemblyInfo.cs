@@ -11,8 +11,8 @@ using System.Resources;
 [assembly: AssemblyProduct("nQonqr")]
 [assembly: AssemblyCopyright("Copyright © Bryan Anderson (Sola Aesir) 2013")]
 [assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("en-US")]
-[assembly: NeutralResourcesLanguage("en-US")]
+[assembly: AssemblyCulture("")]
+[assembly: NeutralResourcesLanguage("")]
 
 // Version information for an assembly consists of the following four values:
 //
