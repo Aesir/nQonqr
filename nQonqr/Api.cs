@@ -73,10 +73,14 @@ namespace nQonqr
 		/// <returns>An IObservable that will produce a single collection of <see cref="IZone"/> before completing.</returns>
 		public async Task<IEnumerable<IZone>> QueryRegion(decimal topLat, decimal leftLon, decimal bottomLat, decimal rightLon)
 		{
-			Contract.Requires<ArgumentOutOfRangeException>(-90m <= topLat && topLat <= 90m);
-			Contract.Requires<ArgumentOutOfRangeException>(-180m <= leftLon && leftLon <= 180m);
-			Contract.Requires<ArgumentOutOfRangeException>(-90m <= bottomLat && bottomLat <= 90m);
-			Contract.Requires<ArgumentOutOfRangeException>(-180m <= rightLon && rightLon <= 180m);
+			Contract.Requires<ArgumentOutOfRangeException>(-90m <= topLat);
+			Contract.Requires<ArgumentOutOfRangeException>(topLat <= 90m);
+			Contract.Requires<ArgumentOutOfRangeException>(-180m <= leftLon);
+			Contract.Requires<ArgumentOutOfRangeException>(leftLon <= 180m);
+			Contract.Requires<ArgumentOutOfRangeException>(-90m <= bottomLat);
+			Contract.Requires<ArgumentOutOfRangeException>(bottomLat <= 90m);
+			Contract.Requires<ArgumentOutOfRangeException>(-180m <= rightLon);
+			Contract.Requires<ArgumentOutOfRangeException>(rightLon <= 180m);
 			Contract.Ensures(Contract.Result<Task<IEnumerable<IZone>>>() != null);
 
 			var uri = new Uri(string.Format(AREA_FORMAT_STRING, topLat, leftLon, bottomLat, rightLon), UriKind.Relative);
