@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>nQonqr</id>
+    <version>$version$</version>
+    <title>nQonqr</title>
+    <authors>Bryan Anderson</authors>
+    <owners>Bryan Anderson</owners>
+    <licenseUrl>http://www.opensource.org/licenses/MS-PL</licenseUrl>
+    <projectUrl>https://github.com/Aesir/nQonqr</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A .Net Portable Class Library implementation of the Qonqr API</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright Bryan Anderson 2013</copyright>
+	<iconUrl>http://i.imgur.com/uoEQxGE.png</iconUrl>
+    <tags>Qonqr</tags>
+  </metadata>
+</package>
