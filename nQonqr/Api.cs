@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.IO;
-using System.Net;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Reactive.Threading.Tasks;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -15,18 +12,20 @@ namespace nQonqr
 	/// This class contains all operations possible on the Qonqr API
 	/// </summary>
 	public class Api
+		: IDisposable
 	{
 		private const string API_KEY_HEADER = "ApiKey";
-		private const string SINGLE_ZONE_FORMAT_STRING = @"https://api.qonqr.com/pub/ZoneData/Status/{0}";
-		private const string AREA_FORMAT_STRING = @"https://api.qonqr.com/pub/ZoneData/BoundingBoxStatus/{0}/{1}/{2}/{3}";
+		private const string BASE_ADDRESS = @"https://api.qonqr.com/pub/";
+		private const string SINGLE_ZONE_FORMAT_STRING = @"ZoneData/Status/{0}";
+		private const string AREA_FORMAT_STRING = @"ZoneData/BoundingBoxStatus/{0}/{1}/{2}/{3}";
 
-		private readonly string m_ApiKey;
+		private readonly HttpClient m_Client;
 
 		[ContractInvariantMethod]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Required for code contracts.")]
+		[SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Required for code contracts.")]
 		private void ObjectInvariant()
 		{
-			Contract.Invariant(!string.IsNullOrWhiteSpace(m_ApiKey));
+			Contract.Invariant(m_Client != null);
 		}
 
 		/// <summary>
@@ -41,87 +40,25 @@ namespace nQonqr
 			Contract.Requires<ArgumentNullException>(apiKey != null, "apiKey");
 			Contract.Requires<ArgumentException>(!string.IsNullOrWhiteSpace(apiKey));
 
-			m_ApiKey = apiKey;
-		}
-
-		private HttpWebRequest CreateApiRequest(Uri uri)
-		{
-			Contract.Requires(uri != null);
-			Contract.Ensures(Contract.Result<WebRequest>() != null);
-
-			var request = WebRequest.CreateHttp(uri);
-			request.Headers[API_KEY_HEADER] = m_ApiKey;
-
-			return request;
-		}
-
-		private void HandleResponse<T>(WebResponse x, IObserver<T> responseWatcher)
-		{
-			var response = x as HttpWebResponse;
-			if (response == null)
-			{
-				responseWatcher.OnError(new Exception("Unknown web response"));
-				return;
-			}
-
-			if (response.StatusCode != HttpStatusCode.OK)
-			{
-				responseWatcher.OnError(new Exception(string.Format("Server returned bad status code: {0}", response.StatusDescription)));
-				return;
-			}
-
-			try
-			{
-				using (var rs = response.GetResponseStream())
-				{
-					using (var sr = new StreamReader(response.GetResponseStream()))
-					{
-						using (var reader = new JsonTextReader(sr))
-						{
-							JsonSerializer serializer = new JsonSerializer();
-							var data = serializer.Deserialize<T>(reader);
-
-							responseWatcher.OnNext(data);
-							responseWatcher.OnCompleted();
-						}
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				responseWatcher.OnError(new Exception("Error parsing response", ex));
-				return;
-			}
+			m_Client = new HttpClient() { BaseAddress = new Uri(BASE_ADDRESS) };
+			m_Client.DefaultRequestHeaders.Add(API_KEY_HEADER, apiKey);
 		}
 
 		/// <summary>
 		/// Gets the data for a single zone.
 		/// </summary>
-		/// <param name="zoneId">The zone identifier, this can be obtained from your scope by viewing the zone 
+		/// <param name="zoneId">The zone identifier, this can be obtained from your scope by viewing the zone
 		/// summary and dropping the z prefix or by using the QueryRegion call.</param>
 		/// <returns>An IObservable that will produce a single <see cref="IZone"/> before completing.</returns>
-		public IObservable<IZone> QueryZone(uint zoneId)
+		public async Task<IZone> QueryZone(uint zoneId)
 		{
-			Contract.Ensures(Contract.Result<IObservable<IZone>>() != null);
+			Contract.Ensures(Contract.Result<Task<IZone>>() != null);
 
-			var uri = new Uri(string.Format(SINGLE_ZONE_FORMAT_STRING, zoneId));
-			var request = CreateApiRequest(uri);
+			var uri = new Uri(string.Format(SINGLE_ZONE_FORMAT_STRING, zoneId), UriKind.Relative);
+			var jsonResult = await m_Client.GetStringAsync(uri);
+			var zone = JsonConvert.DeserializeObject<Zone>(jsonResult);
 
-			var asyncServiceCallWrapper = new AsyncSubject<Zone>();
-
-			Task<WebResponse>
-				.Factory
-				.FromAsync(request.BeginGetResponse, request.EndGetResponse, TaskCreationOptions.None)
-				.ToObservable()
-				.Subscribe(
-					x =>
-					{
-						HandleResponse(x, asyncServiceCallWrapper);
-					},
-					asyncServiceCallWrapper.OnError
-				);
-
-			return asyncServiceCallWrapper.AsObservable<IZone>();
+			return zone;
 		}
 
 		/// <summary>
@@ -134,34 +71,60 @@ namespace nQonqr
 		/// <param name="bottomLat">The southern latitude of the bounding box.</param>
 		/// <param name="rightLon">The eastern longitude of the bounding box.</param>
 		/// <returns>An IObservable that will produce a single collection of <see cref="IZone"/> before completing.</returns>
-		public IObservable<IEnumerable<IZone>> QueryRegion(decimal topLat, decimal leftLon, decimal bottomLat, decimal rightLon)
+		public async Task<IEnumerable<IZone>> QueryRegion(decimal topLat, decimal leftLon, decimal bottomLat, decimal rightLon)
 		{
 			Contract.Requires<ArgumentOutOfRangeException>(-90m <= topLat && topLat <= 90m);
 			Contract.Requires<ArgumentOutOfRangeException>(-180m <= leftLon && leftLon <= 180m);
 			Contract.Requires<ArgumentOutOfRangeException>(-90m <= bottomLat && bottomLat <= 90m);
 			Contract.Requires<ArgumentOutOfRangeException>(-180m <= rightLon && rightLon <= 180m);
-			Contract.Ensures(Contract.Result<IObservable<IEnumerable<IZone>>>() != null);
+			Contract.Ensures(Contract.Result<Task<IEnumerable<IZone>>>() != null);
 
-			var uri = new Uri(string.Format(AREA_FORMAT_STRING, topLat, leftLon, bottomLat, rightLon));
-			var request = CreateApiRequest(uri);
+			var uri = new Uri(string.Format(AREA_FORMAT_STRING, topLat, leftLon, bottomLat, rightLon), UriKind.Relative);
+			var jsonResult = await m_Client.GetStringAsync(uri);
+			var zoneGroup = JsonConvert.DeserializeObject<ZoneGroup>(jsonResult);
 
-			var asyncServiceCallWrapper = new AsyncSubject<ZoneGroup>();
-
-			Task<WebResponse>
-				.Factory
-				.FromAsync(request.BeginGetResponse, request.EndGetResponse, TaskCreationOptions.None)
-				.ToObservable()
-				.Subscribe(
-					x =>
-					{
-						HandleResponse(x, asyncServiceCallWrapper);
-					},
-					asyncServiceCallWrapper.OnError
-				);
-
-			return asyncServiceCallWrapper
-				.Select(zg => zg.Zones)
-				.AsObservable();
+			return zoneGroup.Zones;
 		}
+
+		#region IDisposable
+
+		private bool m_AlreadyDisposed = false;
+
+		/// <summary>
+		/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+		/// </summary>
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		/// <summary>
+		/// Releases unmanaged and - optionally - managed resources
+		/// </summary>
+		/// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+		protected virtual void Dispose(bool disposing)
+		{
+			if (m_AlreadyDisposed)
+				return;
+
+			if (disposing)
+			{
+				m_Client.Dispose();
+			}
+
+			m_AlreadyDisposed = true;
+		}
+
+		/// <summary>
+		/// Releases unmanaged resources and performs other cleanup operations before the
+		/// <see cref="Api"/> is reclaimed by garbage collection.
+		/// </summary>
+		~Api()
+		{
+			Dispose(false);
+		}
+
+		#endregion IDisposable
 	}
 }
