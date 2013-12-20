@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/Aesir/nQonqr</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .Net Portable Class Library implementation of the Qonqr API</description>
-    <releaseNotes>Initial release</releaseNotes>
+    <releaseNotes>Added an API limit reached exception, better general error handling, and made IZone DateTimes nullable to account for uncaptured zones.</releaseNotes>
     <copyright>Copyright Bryan Anderson 2013</copyright>
 	<iconUrl>http://i.imgur.com/uoEQxGE.png</iconUrl>
     <tags>Qonqr</tags>
