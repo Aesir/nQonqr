@@ -31,13 +31,13 @@ namespace nQonqr
 
 		public string CapturedByCodename { get; set; }
 
-		public DateTime DateCapturedUTC { get; set; }
+		public DateTime? DateCapturedUTC { get; set; }
 
 		public uint LeaderPlayerId { get; set; }
 
 		public string LeaderCodename { get; set; }
 
-		public DateTime LeaderSinceDateUTC { get; set; }
+		public DateTime? LeaderSinceDateUTC { get; set; }
 
 		public uint LegionCount { get; set; }
 

@@ -75,7 +75,7 @@ namespace nQonqr
 		/// <summary>
 		/// Gets the UTC date and time when the zone was captured by the currently controlling faction.
 		/// </summary>
-		DateTime DateCapturedUTC { get; }
+		DateTime? DateCapturedUTC { get; }
 
 		/// <summary>
 		/// Gets the identifier of the player that has the most bots in the zone for the controlling faction or 0 if not controlled.
@@ -90,7 +90,7 @@ namespace nQonqr
 		/// <summary>
 		/// Gets UTC date and time when the zone leader took the lead in the zone
 		/// </summary>
-		DateTime LeaderSinceDateUTC { get; }
+		DateTime? LeaderSinceDateUTC { get; }
 
 		/// <summary>
 		/// Gets the total number of Faceless bots in the zone.
