@@ -111,6 +111,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Api.cs" />
+    <Compile Include="ApiLimitReachedException.cs" />
     <Compile Include="Faction.cs" />
     <Compile Include="IZone.cs" />
     <Compile Include="Zone.cs" />

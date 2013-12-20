@@ -55,7 +55,7 @@ namespace nQonqr
 			Contract.Ensures(Contract.Result<Task<IZone>>() != null);
 
 			var uri = new Uri(string.Format(SINGLE_ZONE_FORMAT_STRING, zoneId), UriKind.Relative);
-			var jsonResult = await m_Client.GetStringAsync(uri);
+			var jsonResult = await HandleHttpRequest(uri);
 			var zone = JsonConvert.DeserializeObject<Zone>(jsonResult);
 
 			return zone;
@@ -84,10 +84,29 @@ namespace nQonqr
 			Contract.Ensures(Contract.Result<Task<IEnumerable<IZone>>>() != null);
 
 			var uri = new Uri(string.Format(AREA_FORMAT_STRING, topLat, leftLon, bottomLat, rightLon), UriKind.Relative);
-			var jsonResult = await m_Client.GetStringAsync(uri);
+			var jsonResult = await HandleHttpRequest(uri);
 			var zoneGroup = JsonConvert.DeserializeObject<ZoneGroup>(jsonResult);
 
 			return zoneGroup.Zones;
+		}
+
+		private async Task<string> HandleHttpRequest(Uri uri)
+		{
+			var result = await m_Client.GetAsync(uri);
+
+			if (result.IsSuccessStatusCode)
+			{
+				var jsonString = await result.Content.ReadAsStringAsync();
+				return jsonString;
+			}
+
+			if ((int)result.StatusCode == 429)  //429 isn't part of the HttpStatusCode enumeration
+			{
+				throw new ApiLimitReachedException();
+			}
+
+			var unknownCodeMessage = string.Format("API call failed, status code {0} - {1}", result.StatusCode, result.ReasonPhrase);
+			throw new Exception(unknownCodeMessage);
 		}
 
 		#region IDisposable
