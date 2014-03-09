@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -19,12 +20,15 @@ namespace nQonqr
 		private const string SINGLE_ZONE_FORMAT_STRING = @"ZoneData/Status/{0}";
 		private const string AREA_FORMAT_STRING = @"ZoneData/BoundingBoxStatus/{0}/{1}/{2}/{3}";
 
+		private static readonly CultureInfo s_ServerCulture = CultureInfo.InvariantCulture;
+
 		private readonly HttpClient m_Client;
 
 		[ContractInvariantMethod]
 		[SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Required for code contracts.")]
 		private void ObjectInvariant()
 		{
+			Contract.Invariant(s_ServerCulture != null);
 			Contract.Invariant(m_Client != null);
 		}
 
@@ -83,7 +87,12 @@ namespace nQonqr
 			Contract.Requires<ArgumentOutOfRangeException>(rightLon <= 180m);
 			Contract.Ensures(Contract.Result<Task<IEnumerable<IZone>>>() != null);
 
-			var uri = new Uri(string.Format(AREA_FORMAT_STRING, topLat, leftLon, bottomLat, rightLon), UriKind.Relative);
+			var areaPart = string.Format(AREA_FORMAT_STRING, 
+				topLat.ToString(s_ServerCulture), 
+				leftLon.ToString(s_ServerCulture), 
+				bottomLat.ToString(s_ServerCulture), 
+				rightLon.ToString(s_ServerCulture));
+			var uri = new Uri(areaPart, UriKind.Relative);
 			var jsonResult = await HandleHttpRequest(uri);
 			var zoneGroup = JsonConvert.DeserializeObject<ZoneGroup>(jsonResult);
 
