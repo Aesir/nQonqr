@@ -10,8 +10,8 @@
     <projectUrl>https://github.com/Aesir/nQonqr</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A .Net Portable Class Library implementation of the Qonqr API</description>
-    <releaseNotes>Added an API limit reached exception, better general error handling, and made IZone DateTimes nullable to account for uncaptured zones.</releaseNotes>
-    <copyright>Copyright Bryan Anderson 2013</copyright>
+    <releaseNotes>Fixed an issue where the local culture using a different number format than the server caused region queries to fail.</releaseNotes>
+    <copyright>Copyright Bryan Anderson 2014</copyright>
 	<iconUrl>http://i.imgur.com/uoEQxGE.png</iconUrl>
     <tags>Qonqr</tags>
   </metadata>
